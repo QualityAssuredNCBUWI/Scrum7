@@ -46,12 +46,12 @@ data_lead_1 = data[data$lead == 1,]
 data_lead_0 = data[data$lead == 0,]
 
 #randomize the sampling
-set.seed(13)
-newDataset_lead_1 <-sample.split(Y=data_lead_1$lead, SplitRatio = 0.30)
-newDataset_lead_0 <-sample.split(Y=data_lead_0$lead, SplitRatio = 0.65)
+set.seed(1098765467)
+newDataset_lead_1 <-sample.split(Y=data_lead_1$lead, SplitRatio = 0.35)
+newDataset_lead_0 <-sample.split(Y=data_lead_0$lead, SplitRatio = 0.75)
 
 trainData <-rbind(data_lead_1[newDataset_lead_1,], data_lead_0[newDataset_lead_0,])
-testData <- rbind(data_lead_1[!newDataset_lead_1,][1:130,], data_lead_0[!newDataset_lead_0,])
+testData <- rbind(data_lead_1[!newDataset_lead_1,][1:100,], data_lead_0[!newDataset_lead_0,])
 
 summary(trainData$lead)
 summary(testData$lead)
@@ -63,7 +63,7 @@ summary(testData$lead)
 
 ```{r}
 # The . specifies all other columns ( Class ~ . )
-DTmodel <- rpart(lead ~ education + age + job + marital + deposit + balance + loan + housing, method="class", data=trainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 3))  
+DTmodel <- rpart(lead ~ education + age + job + marital + deposit + balance + loan + housing, method="class", data=trainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 45, maxdepth = 4))  
 ```
 
 
@@ -126,8 +126,17 @@ actualTest <- testData$lead
 ```{r}
 t1 <- table(predictions=predTest, actual = actualTest)
 t1 # Confusion matrix
-accuracy1 <- sum(diag(t1))/sum(t1)
+accuracy1 <- sum(diag(t1))/sum(t1) * 100
 accuracy1 
+
+
+#calculatee sensitivity
+sensitivity <- t1[2,2]/sum(t1[2,]) *100
+sensitivity
+
+#calculate specificity
+specificity <- t1[1,1]/sum(t1[1,]) *100
+specificity
 ```
 
 
