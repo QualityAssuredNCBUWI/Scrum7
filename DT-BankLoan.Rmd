@@ -46,12 +46,12 @@ data_lead_1 = data[data$lead == 1,]
 data_lead_0 = data[data$lead == 0,]
 
 #randomize the sampling
-set.seed(321)
-newDataset_lead_1 <-sample.split(Y=data_lead_1$lead, SplitRatio = 0.25)
-newDataset_lead_0 <-sample.split(Y=data_lead_0$lead, SplitRatio = 0.5)
+set.seed(1)
+newDataset_lead_1 <-sample.split(Y=data_lead_1$lead, SplitRatio = 0.28)
+newDataset_lead_0 <-sample.split(Y=data_lead_0$lead, SplitRatio = 0.6)
 
 trainData <-rbind(data_lead_1[newDataset_lead_1,], data_lead_0[newDataset_lead_0,])
-testData <- rbind(data_lead_1[!newDataset_lead_1,][1:180,], data_lead_0[!newDataset_lead_0,])
+testData <- rbind(data_lead_1[!newDataset_lead_1,][1:150,], data_lead_0[!newDataset_lead_0,])
 
 summary(trainData$lead)
 summary(testData$lead)
