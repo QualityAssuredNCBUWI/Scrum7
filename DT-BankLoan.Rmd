@@ -1,0 +1,228 @@
+---
+title: "DT Scrum cycle Exercise"
+author: "Phillip Llewellyn"
+date: "7/19/2021"
+output: pdf_document
+---
+
+# Decision Tree Scrum Cycle 7
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#### Decision Tree
+library(rpart)
+library(rpart.plot)
+library(pROC)
+library(caTools)
+
+#install.packages("RWeka")
+#require(RWeka)
+require(party)
+require(partykit)
+library(ggplot2)
+```
+
+
+## Step 1
+- Load data and get summaries 
+
+```{r}
+data <-read.csv("BankLoan Dataset 2021 - Clean .csv")  #HR.csv
+#str(data)
+summary(data)
+#data$left <- as.factor(data$left)
+#str(data)
+```
+
+
+## Step 2
+- Split data into training and testing data
+
+```{r}
+set.seed(21)
+newDataset <-sample.split(Y=data$X, SplitRatio = 0.7)
+trainData <- data[newDataset,]
+testData <- data[!newDataset,]
+```
+
+
+## Step 3
+- Fit a Decision Tree using training data
+
+```{r}
+# The . specifies all other columns ( Class ~ . )
+DTmodel <- rpart(won ~ age + job + education , method="class", data=trainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 100, maxdepth = 10))  
+```
+
+
+- Target Variable = Class, 
+- Input Vaiables = All, 
+- split =gini or information gain 
+- control = rpart.control for prepruning DT minsplit- min records at node for split to occur, maxdepth - depth of the DT
+
+-  Fitting the model
+
+```{r}
+rpart.plot(DTmodel, type=3, extra = 2, fallen.leaves = F, cex = 0.8)
+#try extra with 2,8,4, 101
+```
+
+
+- Print out the information
+
+```{r}
+#(DTmodel) # detailed summary of splits
+DTmodel #prints the rules
+```
+
+
+- Run the second model
+
+```{r}
+#DTmodel2 <- J48(as.factor(Class) ~., trainData, control = Weka_control(R = TRUE, M = round(NROW(trainData)*0.05)))
+
+#DTmodel2 <- J48(as.factor(left) ~., trainData, control = Weka_control(R = TRUE, M = 50))
+
+#IGDT5model <- J48(as.factor(eReader_Adoption)~., trainData ,control = Weka_control(R = TRUE, M = round(NROW(trainData)*0.05))) 
+
+#IGDT10model <- J48(as.factor(eReader_Adoption)~., trainData ,control = Weka_control(R = TRUE, M = round(NROW(trainData)*0.10)))
+```
+
+
+- Plot the model
+
+```{r}
+#plot(DTmodel)
+```
+
+
+## Step 4
+- Use the fitted model to do predictions for the test data
+
+```{r}
+predTest <- predict(DTmodel, testData, type="class")
+probTest <- predict(DTmodel, testData, type="prob")
+
+actualTest <- testData$won
+```
+
+
+
+## Step 5
+- Create Confusion Matrix and compute the misclassification error
+ 
+```{r}
+t1 <- table(predictions=predTest, actual = actualTest)
+t1 # Confusion matrix
+accuracy1 <- sum(diag(t1))/sum(t1)
+accuracy1 
+```
+
+
+- Visualization of probabilities
+
+```{r}
+hist(probTest[,2], breaks = 100)
+```
+
+
+- ROC and Area Under the Curve
+
+```{r}
+ROC <- roc(actualTest, probTest[,2])
+plot(ROC, col="blue")
+AUC <- auc(ROC)
+AUC
+```
+
+
+- A new dataframe with Predicted Prob, Actual Value and Predicted Value
+
+```{r}
+predicted_data <- data.frame(Probs = probTest, Actual_Value= actualTest ,Predicted_Value = predTest )  #Create data frame with prob and predictions
+  #predicted_data$Probs.0 <- Class 0 Probability
+  #predicted_data$Probs.1 <-  Class 1 Probability
+predicted_data <- predicted_data[order(predicted_data$Probs.1, decreasing=TRUE),] # Sort on Probabilities
+predicted_data$Rank <- 1:nrow(predicted_data) # Add a new variable rank
+```
+
+
+- plot the graph
+
+```{r}
+ggplot(data=predicted_data, aes(x=Rank, y=Probs.1)) + 
+  geom_point(aes(color = Actual_Value)) + xlab("Index") + ylab("Predicted Probability of getting Diabetes")
+```
+
+
+## Step 6
+- Use model to make predictions on newdata. Note we can specify the newData as data.frame with one or many records
+
+```{r}
+#newData <- data.frame(Nbr_Preg = 4 , Glucose_test = 100, Triceps_SF=40,BP =95, S_insulin = 150, BMI= 30,Diabetes_fn = 0.54,Age = 50 )
+
+#predProbability <-predict(DTmodel, newData, type='prob')
+#predProbability
+
+## Performnce measures - 
+#setseed(1), gini
+# Simplicity = 15 leaves
+# Accuracy = 0.734
+# AUC = 0.7627
+
+#setseed(1), information
+# Simplicity = 10 leaves
+# Accuracy = 0.71
+# AUC = 0.7834
+
+```
+
+## Step 7
+- EXAMINING STABILITY - Creating Decile Plots for Class 1 or 0 Sort
+
+```{r}
+#-----Create empty df-------
+#decileDF<- data.frame(matrix(ncol=3,nrow = 0))
+#colnames(decileDF)<- c("Decile","per_correct_preds","No_correct_Preds","cum_preds")
+#-----Initialize varables
+#num_of_deciles=10
+#Obs_per_decile<-nrow(predicted_data)/num_of_deciles
+#decile_count=1
+#start=1
+#stop=(start-1) + Obs_per_decile
+#prev_cum_pred<-0
+#x=0
+#-----Loop through DF and create deciles
+#while (x < nrow(predicted_data)) {
+#  subset<-predicted_data[c(start:stop),]
+#  correct_count<- ifelse(subset$Actual_Value==subset$Predicted_Value,1,0)
+#  no_correct_Preds<-sum(correct_count,na.rm = TRUE)
+#  per_correct_Preds<-(no_correct_Preds/Obs_per_decile)*100
+#  cum_preds<-no_correct_Preds+prev_cum_pred
+#  addRow<-data.frame("Decile"=decile_count,"per_correct_preds"=per_correct_Preds,"No_correct_Preds"=no_correct_Preds,"cum_preds"=cum_preds)
+#  decileDF<-rbind(decileDF,addRow)
+#  prev_cum_pred<-prev_cum_pred+no_correct_Preds
+#  start<-stop+1
+#  stop=(start-1) + Obs_per_decile
+#  x<-x+Obs_per_decile
+#  decile_count<-decile_count+1
+#}
+#------Stability plot (correct preds per decile)
+#plot(decileDF$Decile,decileDF$per_correct_preds,type = "l",xlab = "Decile",ylab = "Percentage of correct predictions",main="Stability Plot for Class 1")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
