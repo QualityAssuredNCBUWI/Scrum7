@@ -30,8 +30,9 @@ library(ggplot2)
 ```{r}
 data <-read.csv("BankLoan Dataset 2021 - Clean .csv")  #HR.csv
 #str(data)
+data$lead <- as.factor(data$lead)
+data$won <- as.factor(data$won)
 summary(data)
-#data$left <- as.factor(data$left)
 #str(data)
 ```
 
@@ -40,10 +41,20 @@ summary(data)
 - Split data into training and testing data
 
 ```{r}
-set.seed(21)
-newDataset <-sample.split(Y=data$X, SplitRatio = 0.7)
-trainData <- data[newDataset,]
-testData <- data[!newDataset,]
+# separate the data for an equal split
+data_lead_1 = data[data$lead == 1,]
+data_lead_0 = data[data$lead == 0,]
+
+#randomize the sampling
+set.seed(321)
+newDataset_lead_1 <-sample.split(Y=data_lead_1$lead, SplitRatio = 0.25)
+newDataset_lead_0 <-sample.split(Y=data_lead_0$lead, SplitRatio = 0.5)
+
+trainData <-rbind(data_lead_1[newDataset_lead_1,], data_lead_0[newDataset_lead_0,])
+testData <- rbind(data_lead_1[!newDataset_lead_1,][1:180,], data_lead_0[!newDataset_lead_0,])
+
+summary(trainData$lead)
+summary(testData$lead)
 ```
 
 
@@ -52,7 +63,7 @@ testData <- data[!newDataset,]
 
 ```{r}
 # The . specifies all other columns ( Class ~ . )
-DTmodel <- rpart(won ~ age + job + education , method="class", data=trainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 100, maxdepth = 10))  
+DTmodel <- rpart(lead ~ education + age + job + marital + deposit + balance + loan + housing, method="class", data=trainData, parms = list (split ="information gain"), control = rpart.control(minsplit = 10, maxdepth = 5))  
 ```
 
 
