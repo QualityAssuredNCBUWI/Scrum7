@@ -28,7 +28,7 @@ library(ggplot2)
 - Load data and get summaries 
 
 ```{r}
-data <-read.csv("BankLoan Dataset 2021 - Clean .csv")  #HR.csv
+data <-read.csv("BankLoan_Dataset_2021-Clean.csv")  #HR.csv
 #str(data)
 data$lead <- as.factor(data$lead)
 data$won <- as.factor(data$won)
